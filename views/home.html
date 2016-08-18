@@ -1,0 +1,52 @@
+<header>
+    <nav class="navbar navbar-default  navbar-fixed-top">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+              <a class="navbar-brand" href="#/">
+                <img src="https://www.okta.com/sites/all/themes/Okta/images/logo.svg" height="100%" width="100%"/>
+              </a>
+          </div>
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                  <li ng-if="auth"> <td style="padding:30px;"> <a ng-click="signout()" style="font-size:20px;">Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="row" ng-if="auth">
+  <div class="col-md-2"><br />
+    <div class="affix">
+      <div class="btn-group-vertical" ng-if="session">
+          <button type="button" class="btn btn-lg btn-success" ng-click="refreshSession()">Refresh Session</button>
+          <button type="button" class="btn btn-lg btn-danger" ng-click="closeSession()">Close Session</button>
+      </div>
+      <br /><br /><br />
+      <a type="button" class="btn btn-lg btn-info" ng-if="!session" href="#/login" ng-click="signout()" >Re-Authenticate</a>
+      <div class="btn-group-vertical" ng-if="session">
+          <button type="button" class="btn btn-lg btn-primary" ng-click="renewIdToken()">Renew ID Token</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-1"></div>
+  <div class="col-md-9">
+    <h3 id="responseAnchor">
+      ID Token
+      <span class="label label-primary pull-right" ng-if="session">Active Session</span>
+      <span class="label label-warning pull-right" ng-if="!session">Closed Session</span>
+    </h3>
+    <pre><code>{{auth.idToken}}</code></pre>
+    <h3>Claims
+      <pre><code>{{auth.claims | json}}</code></pre>
+    </h3>
+      <h3 ng-if="sessionObject" id="sessionAnchor">Session Info
+      <pre><code>{{sessionObject | json}}</code></pre></h3>
+  </div>
+</div>
+
+<div ng-if="!auth">
+  <br />
+  <h3> Please <a href="#/login"> Sign in to continue</a></h3>
+</div>
