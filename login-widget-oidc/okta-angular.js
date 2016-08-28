@@ -26,14 +26,23 @@ angular
         },
         initWidget: function(options){
         	// Create widget
-        	var createWidget = new OktaSignIn({
-				baseUrl : options.baseUrl,
-				clientId : options.clientId,
-				redirectUri : options.redirectUri,
-				authScheme : options.authScheme,
-				authParams : options.authParams
-			});
+        	var createWidget = new OktaSignIn(options);
 			widget = createWidget; 
+        },
+        renderWidget: function(element) {
+            // Render widget
+            var deferred = $q.defer();
+            widget.renderEl(
+                { el: element },
+                function(result) {
+                    if (result.status === "SUCCESS" ) {
+                        //Success
+                        deferred.resolve(result);
+                    } else {
+                        deferred.reject(result);
+                    }
+                });
+            return deferred.promise;
         },
         refreshSession : function(){
         	var deferred = $q.defer();
