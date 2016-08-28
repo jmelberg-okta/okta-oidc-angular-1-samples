@@ -76,7 +76,7 @@ function HomeController($scope, $window, $location, widgetManager) {
 	
 	// Get auth object from LocalStorage
 	var auth = angular.isDefined($window.localStorage["auth"]) ? JSON.parse($window.localStorage["auth"]) : undefined;
-	console.log("here");
+
 	// Redirect if user is not authenticated
 	if (angular.isUndefined(auth)) {
 		$location.path("/login");
