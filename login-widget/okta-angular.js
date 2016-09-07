@@ -86,7 +86,7 @@ angular
 					widget.signOut();
 					deferred.resolve("Signed out");
 				} else {
-					deferred.reject("Already Signed Out");
+					deferred.resolve("Already Signed Out");
 				}
 			});
 			return deferred.promise;
