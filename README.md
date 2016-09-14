@@ -1,10 +1,11 @@
-# Okta's Sign-In Widget with AngularJS
-Implementation of Okta's Sign-In Widget using AngularJS 1
+# Okta's Sign-In Widget and AuthJS SDK with AngularJS
+Implementation of Okta's Sign-In Widget and AuthJS using AngularJS 1
 
 ###Samples Provided
 - [Simple Login Experience Using Okta](https://github.com/jmelberg/okta-widget-angular/tree/master/login-widget)
 - [Custom Branded Login Experience](https://github.com/jmelberg/okta-widget-angular/tree/master/login-widget-custom-branded)
 - [OpenID Connect / Social Login](https://github.com/jmelberg/okta-widget-angular/tree/master/login-widget-oidc)
+- [Custom Login w/ AccessToken]((https://github.com/jmelberg/okta-widget-angular/tree/master/custom-login)
 
 ## Running the Sample with your Okta Organization
 ###Pre-requisites
