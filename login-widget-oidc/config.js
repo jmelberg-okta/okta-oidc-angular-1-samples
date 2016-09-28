@@ -32,9 +32,9 @@ angular
         }],
   	    authScheme: "OAUTH2",
   	    authParams: {
-    	      responseType: "id_token",
+    	      responseType: ["id_token", "token"],
     	      responseMode: "okta_post_message",
-    	      scope : [
+    	      scopes : [
       		      "openid",
       		      "email",
       		      "profile",

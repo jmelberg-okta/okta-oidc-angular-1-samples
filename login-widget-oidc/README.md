@@ -76,7 +76,39 @@ $scope.closeSession = function() {
     });
   }
 ```
+###Access Token Support
+**Note**: This is a pre-release feature of the sign-in widget. Breaking changes may occur to the samples if you use the included `okta-sign-in.min.js` file.
 
+####Update Widget Configuration
+To request multiple tokens, append them to an array. The tokens will be received in the same order as requested.
+
+```javascript
+angular
+.module("WidgetConfig", [])
+.constant("CONFIG", {
+    options : {
+        baseUrl: "https://example.oktapreview.com",
+        clientId: "ViczvMucBWT14qg3lAM1",
+        redirectUri: "http://localhost:8080",
+        idps: [{
+            type: "FACEBOOK",
+            id: "0oa5kecjfwuF4HQ4w0h7"
+        }],
+        authScheme: "OAUTH2",
+        authParams: {
+            responseType: ["id_token", "token"],
+            responseMode: "okta_post_message",
+            scope : [
+                "openid",
+                "email",
+                "profile",
+                "address",
+                "phone"
+            ]
+        }
+    }
+});
+```
 ###Log-Out
 Terminates the current session with the organization.
 

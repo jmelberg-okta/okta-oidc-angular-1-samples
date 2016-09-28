@@ -44,6 +44,9 @@
     <h3>Claims
       <pre><code>{{token.claims | json}}</code></pre>
     </h3>
+    <h3 ng-if="accessToken">Access Token
+      <pre><code>{{accessToken.accessToken}}</code></pre>
+    </h3>
       <h3 ng-if="sessionObject" id="sessionAnchor">Session Info
       <pre><code>{{sessionObject | json}}</code></pre></h3>
   </div>

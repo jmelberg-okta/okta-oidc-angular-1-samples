@@ -55,11 +55,22 @@ app.directive("myWidget",
 						scope.widget = true;
 					});
 					widgetManager.renderWidget(element.children()[1])
-					.then(function(success) {
-						$window.localStorage["idToken"] = angular.toJson({
-							"idToken" : success.idToken,
-							"claims" : success.claims
+					.then(function(tokens) {
+						angular.forEach(tokens, function(token) {
+							if ("idToken" in token) {
+								$window.localStorage["idToken"] = angular.toJson({
+									"idToken" : token.idToken,
+									"claims" : token.claims
+								});
+							}
+							if ("accessToken" in token) {
+								console.log(token);
+								$window.localStorage["accessToken"] = angular.toJson({
+									"accessToken" : token.accessToken
+								});
+							}
 						});
+						
 					}, function(error) {
 						console.error(error);
 					});				
@@ -75,6 +86,7 @@ function HomeController($scope, $window, $location, widgetManager) {
 	// Get idToken from LocalStorage
 	var token = angular.isDefined($window.localStorage["idToken"]) ? JSON.parse($window.localStorage["idToken"]) : undefined;
 	
+	var accessToken = angular.isDefined($window.localStorage["accessToken"]) ? JSON.parse($window.localStorage["accessToken"]) : undefined;
 	// Redirect if there is no token
 	if (angular.isUndefined(token)) {
 		$location.path("/login");
@@ -82,6 +94,7 @@ function HomeController($scope, $window, $location, widgetManager) {
 
 	$scope.session = true;
 	$scope.token = token;
+	$scope.accessToken = accessToken;
 
 	// Refreshes the current session if active	
 	$scope.refreshSession = function() {
