@@ -26,10 +26,6 @@ angular
 	      baseUrl: "https://example.oktapreview.com",
         clientId: "ViczvMucBWT14qg3lAM1",
         redirectUri: "http://localhost:8080",
-        idps: [{
-            type: "FACEBOOK",
-            id: "0oa5kecjfwuF4HQ4w0h7"
-        }],
   	    authScheme: "OAUTH2",
   	    authParams: {
     	      responseType: ["id_token", "token"],

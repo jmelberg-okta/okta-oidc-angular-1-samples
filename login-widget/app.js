@@ -129,9 +129,7 @@ LoginController.$inject = ["$window", "$location", "$scope", "widgetManager"];
 function LoginController($window, $location, $scope, widgetManager) {
 	widgetManager.checkSession()
 	.then(function(loggedIn) {
-		$location.path("/");
-	}, function(loggedOut) {
-		// Clear existing scope
+		widgetManager.logoutWidget();
 		$window.localStorage.clear();
 		$scope = $scope.$new(true);
 	});

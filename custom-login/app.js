@@ -165,13 +165,8 @@ LoginController.$inject = ["$window", "$location", "$scope", "authClient"];
 function LoginController($window, $location, $scope, authClient) {
 	authClient.getClient()
 	.session.exists(function(exists) {
-		if(exists) {
-			$location.path("/");
-		} else {
-			// Clear scope and localStorage
-			$window.localStorage.clear();
-			$scope = $scope.$new(true);
-		}
+		authClient.getClient().session.close();
+		clearStorage();
 	});
 
 	// Handles authentication
