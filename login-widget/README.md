@@ -85,13 +85,11 @@ Updates the current session object using the [Sign-in Widget SDK](http://develop
 
 ```javascript
 $scope.refreshSession = function() {
-    widgetManager.refreshSession()
-    .then(function(success){
-      // success
-    }, function(error) {
-      // error
+    widget.session.refresh(function(success) {
+      // Show session object
+      $scope.sessionObject = success;
     });
-  }
+  };
 ```
 
 ###Close Session
@@ -99,13 +97,10 @@ Terminates the current session object
 
 ```javascript
 $scope.closeSession = function() {
-    widgetManager.closeSession()
-    .then(function(success){
-      // success
-    }, function(err) {
-      // error
+    widget.session.close(function(){
+      $scope.session = undefined;
     });
-  }
+  };
 ```
 
 ###Log-Out
@@ -113,11 +108,12 @@ Terminates the current session with the organization.
 
 ```javascript
 $scope.signout = function() {
-    widgetManager.logoutWidget()
-    .then(function(success) {
-      // success
-    }, function(err) {
-      // error
+    widget.session.exists(function(exists) {
+      if(exists) {
+        widget.signOut();
+        clearStorage();
+        $location.path("/login");
+      }
     });
   };
 ```

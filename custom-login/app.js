@@ -42,11 +42,14 @@ app.run(function(authClient, CONFIG){
 HomeController.$inject = ["$scope", "$window", "$location", "$http", "authClient", "CONFIG"];
 function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 	
+	// Get authClient for helper methods
+	var oktaAuth = authClient.getClient();
+
 	// Get auth object from LocalStorage
 	var auth = angular.isDefined($window.localStorage["auth"]) ? JSON.parse($window.localStorage["auth"]) : undefined;
 
 	// Token manager
-	var tokenManager = authClient.getClient().tokenManager;
+	var tokenManager = oktaAuth.tokenManager;
 
 	// Redirect user if not authenticated
 	if (angular.isUndefined(auth)) {
@@ -58,7 +61,7 @@ function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 
 	// Refresh the current session
 	$scope.refreshSession = function() {
-		authClient.getClient().session.refresh()
+		oktaAuth.session.refresh()
 		.then(function(success){
 			if(success.status === "ACTIVE") {
 				$scope.$apply(function(){
@@ -73,18 +76,16 @@ function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 	};
 
 	$scope.closeSession = function() {
-		authClient.getClient().session.close();
+		oktaAuth.session.close();
 		$scope.session = undefined;
 	};
 
 	$scope.getTokens = function(auth) {
 		var tokenOptions = {
 			'sessionToken' : auth.sessionToken,
-			'responseType' : ['id_token', 'token'], // Requires list for multiple inputs
-			'scopes' : CONFIG.options.authParams.scope
+			'responseType' : ['id_token', 'token'] // Requires list for multiple inputs
 		};
-		authClient.getClient()
-		.idToken.authorize(tokenOptions)
+		oktaAuth.token.getWithoutPrompt(tokenOptions)
 		.then(function(success) {
 			// Success in order requested
 			tokenManager.add('idToken', success[0]);
@@ -95,17 +96,13 @@ function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 				$scope.idToken = tokenManager.get('idToken');
 				$scope.accessToken = tokenManager.get('accessToken');
 			});
-
 		}, function(error) {
 			console.error(error);
 		});
 	};
 
 	$scope.renewIdToken = function() {
-		authClient.getClient()
-		.idToken.refresh(
-			{'scopes' : CONFIG.options.authParams.scope}
-		)
+		oktaAuth.token.refresh(tokenManager.get('idToken'))
 		.then(function(result) {
 			tokenManager.refresh('idToken', result);
 			$scope.$apply(function(){
@@ -118,7 +115,7 @@ function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 
 	/** Decode idToken showing header, claims, and signature */
 	$scope.decode = function(idToken) {
-		var decodedToken = authClient.getClient().idToken.decode(idToken);
+		var decodedToken = oktaAuth.token.decode(idToken);
 		$scope.decodedIdToken = decodedToken;
 	};
 
@@ -145,42 +142,43 @@ function HomeController($scope, $window, $location, $http, authClient, CONFIG) {
 		});
 	};
 
-	/**	Clears the localStorage saved in the web browser and scope variables */
-	function clearStorage(){
+	//	Clears the localStorage saved in the web browser and scope variables
+	function clearStorage() {
 		$window.localStorage.clear();
-		authClient.getClient().tokenManager.clear();
 		$scope = $scope.$new(true);
 	}
 
 	/** Signout method called via button selection */
 	$scope.signout = function() {
-		authClient.getClient().session.close();
+		oktaAuth.session.close();
 		clearStorage();
 		$location.url("/login");
 	};
 }
 
 // Renders login view if session does not exist
-LoginController.$inject = ["$window", "$location", "$scope", "authClient"];
-function LoginController($window, $location, $scope, authClient) {
-	authClient.getClient()
-	.session.exists(function(exists) {
-		authClient.getClient().session.close();
-		clearStorage();
+LoginController.$inject = ["$window", "$scope", "authClient"];
+function LoginController($window, $scope, authClient) {
+	var oktaAuth = authClient.getClient()
+	
+	oktaAuth.session.exists(function(exists) {
+		oktaAuth.session.close();
 	});
 
 	// Handles authentication
 	$scope.authenticate = function(user) {
-		authClient.signIn(user.email, user.password)
-		.then(function(success) {
-			// Success
-			$window.localStorage["auth"] = success;
-
-			// Redirect on success
-			var client = authClient.getClient();
-			client.session.setCookieAndRedirect(JSON.parse(success).sessionToken,
-				client.options.redirectUri+"/#");
+		oktaAuth.signIn({ username: user.email, password: user.password })
+		.then(function(transaction) {
+			if(transaction.status === "SUCCESS"){
+				$window.localStorage["auth"] = angular.toJson({
+					"sessionToken" : transaction.sessionToken,
+					"user" : transaction.user
+				});
+				oktaAuth.session.setCookieAndRedirect(transaction.sessionToken)
+				$window.location.href = '/';
+			}
 		}, function(error) {
+			// Error authenticating
 			console.error(error);
 		});
 	}

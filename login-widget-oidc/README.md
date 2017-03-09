@@ -11,7 +11,6 @@ angular
         baseUrl: "https://example.oktapreview.com",
         clientId: "ViczvMucBWT14qg3lAM1",
         redirectUri: "http://localhost:8080",
-        authScheme: "OAUTH2",
         authParams: {
             responseType: "id_token",
             responseMode: "okta_post_message",
@@ -35,13 +34,9 @@ Exchanges the current `id_token` for a new one
 
 ```javascript
 $scope.renewIdToken = function() {
-    widgetManager.renewIdToken(oldToken)
-    .then(function(success) {
-      // success.idToken
-      // success.claims
-    }, function(error) {
-      // error
-    });
+    widget.idToken.refresh(idToken, function(newToken) {
+        widget.tokenManager.add("idToken", newToken);
+    })
   }
 ```
 
@@ -50,12 +45,12 @@ Updates the current session object using the [Sign-in Widget SDK](http://develop
 
 ```javascript
 $scope.refreshSession = function() {
-    widgetManager.refreshSession()
-    .then(function(success){
-      // success
-    }, function(err) {
-      // error
-    });
+    widget.session.refresh(function(res) {
+        if(res.status === "INACTIVE") {
+            // Redirect to login
+            $location.path("/login")
+        } else { $scope.sessionObject = res }
+    })
   }
 ```
 
@@ -64,16 +59,12 @@ Terminates the current session object
 
 ```javascript
 $scope.closeSession = function() {
-    widgetManager.closeSession()
-    .then(function(success){
-      // success
-    }, function(err) {
-      // error
-    });
+    widget.session.close(function() {
+        $scope.session = undefined
+    })
   }
 ```
-###Access Token Support
-**Note**: This is a pre-release feature of the sign-in widget. Breaking changes may occur to the samples if you use the included `okta-sign-in.min.js` file.
+
 
 ####Update Widget Configuration
 To request multiple tokens, append them to an array. The tokens will be received in the same order as requested.
@@ -90,7 +81,6 @@ angular
             type: "FACEBOOK",
             id: "0oa5kecjfwuF4HQ4w0h7"
         }],
-        authScheme: "OAUTH2",
         authParams: {
             responseType: ["id_token", "token"],
             responseMode: "okta_post_message",
@@ -110,11 +100,13 @@ Terminates the current session with the organization.
 
 ```javascript
 $scope.signout = function() {
-    widgetManager.logoutWidget()
-    .then(function(success) {
-      // success
-    }, function(err) {
-      // error
+    widget.session.exists(function(exists) {
+        // Session exists in Okta
+        // need to log out
+        if(exists){
+            widget.signOut();
+            widget.tokenManager.clear()
+            $location.path("/login");
+        }
     });
-  };
 ```

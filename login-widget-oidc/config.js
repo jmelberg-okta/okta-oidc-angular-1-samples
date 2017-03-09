@@ -24,9 +24,8 @@ angular
 .constant("CONFIG", {
     options : {
 	      baseUrl: "https://example.oktapreview.com",
-        clientId: "ViczvMucBWT14qg3lAM1",
+        clientId: "8p10aJwClXD61oFx3SNT",
         redirectUri: "http://localhost:8080",
-  	    authScheme: "OAUTH2",
   	    authParams: {
     	      responseType: ["id_token", "token"],
     	      responseMode: "okta_post_message",

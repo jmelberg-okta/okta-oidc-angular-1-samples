@@ -36,24 +36,6 @@ angular
 		},
 		getClient : function() {
 			return auth;
-		},
-		signIn : function(email, password) {
-			var deferred = $q.defer();
-			auth.signIn({ username : email, password : password })
-			.then(function(transaction) {
-				switch(transaction.status) {
-					case "SUCCESS":
-						deferred.resolve(angular.toJson(transaction));
-					default:
-						deferred.reject({
-							"Error" : "Cannot handle the " + transation.status + " status"
-						});
-				}
-			})
-			.fail(function(err) {
-				deferred.reject({"Error" : err });
-			});
-			return deferred.promise;
 		}
 	}
 });

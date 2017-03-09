@@ -28,68 +28,6 @@ angular
         	// Create widget
         	var createWidget = new OktaSignIn(options);
 			widget = createWidget; 
-        },
-        renderWidget: function(element) {
-            // Render widget
-            var deferred = $q.defer();
-            widget.renderEl(
-                { el: element },
-                function(result) {
-                    if (result.status === "SUCCESS" ) {
-                        //Success
-                        deferred.resolve(result);
-                    } else {
-                        deferred.reject(result);
-                    }
-                });
-            return deferred.promise;
-        },
-        refreshSession : function(){
-        	var deferred = $q.defer();
-        	widget.session.refresh(function(res) {
-        		if(res.status === "INACTIVE"){
-        			deferred.reject(res);
-        		} else {	deferred.resolve(res);  }
-        	});
-        	return deferred.promise;
-        },
-        closeSession : function() {
-        	var deferred = $q.defer();
-			widget.session.close(function(){
-				deferred.resolve("Closed Session");
-			});
-			return deferred.promise;
-        },
-        renewIdToken : function(token) {
-        	var deferred = $q.defer();
-        	widget.idToken.refresh(token,
-        		function(newToken){
-					deferred.resolve(newToken);
-			});
-			return deferred.promise;
-        },
-        checkSession : function() {
-        	var deferred = $q.defer();
-        	widget.session.exists(function(exists){
-        		if(exists){
-        			deferred.resolve(exists);
-        		} else {
-        			deferred.reject(false);
-        		}
-        	});
-        	return deferred.promise;
-        },
-        logoutWidget: function () {
-        	var deferred = $q.defer();
-			widget.session.exists(function(exists){
-				if(exists){
-					widget.signOut();
-					deferred.resolve("Signed out");
-				} else {
-					deferred.resolve("Already Signed Out");
-				}
-			});
-			return deferred.promise;
         }
     };
 });

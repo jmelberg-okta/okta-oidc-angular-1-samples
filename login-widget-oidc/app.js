@@ -37,7 +37,6 @@ app.controller("LoginController", LoginController);
 // Global variable "widget"
 app.value("widget", undefined);
 app.run(function(widgetManager, CONFIG){
-
 	// Initialize Widget from configuration file
 	widget = widgetManager.initWidget( CONFIG.options );
 });
@@ -51,29 +50,30 @@ app.directive("myWidget",
 			link: function(scope, element, attr) {
 				var button = element.children()[0];
 				angular.element(button).on("click", function() {
-					scope.$apply(function() {
-						scope.widget = true;
-					});
-					widgetManager.renderWidget(element.children()[1])
-					.then(function(tokens) {
-						angular.forEach(tokens, function(token) {
-							if ("idToken" in token) {
-								$window.localStorage["idToken"] = angular.toJson({
-									"idToken" : token.idToken,
-									"claims" : token.claims
-								});
+					scope.$apply(function() { scope.widget = true });
+
+					var widget = widgetManager.getWidget();
+
+					widget.renderEl(
+						{ el: element.children()[1] },
+						function(tokens) {
+							if (tokens.status === "SUCCESS" ) {
+								angular.forEach(tokens, function(token) {
+									// Token response sent in two element array
+									// based on request order ['idToken', 'token']
+									if ("idToken" in token) {
+										widget.tokenManager.add("idToken", token);
+									}
+									if ("accessToken" in token) {
+										widget.tokenManager.add("accessToken", token);
+									}
+							    });
+								// Hide widget
+								scope.widget = false;
+								$window.location.href = '/';
 							}
-							if ("accessToken" in token) {
-								console.log(token);
-								$window.localStorage["accessToken"] = angular.toJson({
-									"accessToken" : token.accessToken
-								});
-							}
-						});
-						
-					}, function(error) {
-						console.error(error);
-					});				
+						}
+					);			
 				});
 			}
 		}
@@ -83,70 +83,58 @@ app.directive("myWidget",
 HomeController.$inject = ["$scope", "$window", "$location", "widgetManager"];
 function HomeController($scope, $window, $location, widgetManager) {
 	
-	// Get idToken from LocalStorage
-	var token = angular.isDefined($window.localStorage["idToken"]) ? JSON.parse($window.localStorage["idToken"]) : undefined;
+	// Get the widget to handle functions
+	var widget = widgetManager.getWidget()
+
+	// Get idToken and accessToken from tokenManger
+	var idToken = widget.tokenManager.get("idToken");
+	var accessToken = widget.tokenManager.get("accessToken");
 	
-	var accessToken = angular.isDefined($window.localStorage["accessToken"]) ? JSON.parse($window.localStorage["accessToken"]) : undefined;
-	// Redirect if there is no token
-	if (angular.isUndefined(token)) {
-		$location.path("/login");
+	
+	// Redirect if there is no idToken
+	if (angular.isUndefined(idToken)) {
+		$location.path("/login")
 	}
 
-	$scope.session = true;
-	$scope.token = token;
-	$scope.accessToken = accessToken;
+	$scope.session = true
+	$scope.token = idToken
+	$scope.accessToken = accessToken
 
 	// Refreshes the current session if active	
 	$scope.refreshSession = function() {
-		widgetManager.refreshSession()
-		.then(function(success) {
-			// Show session object
-			$scope.sessionObject = success;
-		}, function(err) {
-			// Error
-		});
+		widget.session.refresh(function(res) {
+			if(res.status === "INACTIVE") {
+				// Redirect to login
+				$location.path("/login")
+			} else { $scope.sessionObject = res }
+		})
 	};
 
 	// Closes the current live session
 	$scope.closeSession = function() {
-		widgetManager.closeSession()
-		.then(function(success) {
-			$scope.session = undefined;
-		}, function(err) {
-			// Error
-		});
+		widget.session.close(function() {
+			$scope.session = undefined
+		})
 	};
 
 	// Renews the current idToken
 	$scope.renewIdToken = function() {
-		widgetManager.renewIdToken(token.idToken)
-		.then(function(success) {
-			// Update local storage and token value
-			$window.localStorage["idToken"] = angular.toJson(
-				{
-			        "idToken" : success.idToken,
-			        "claims" : success.claims
-			     });
+		widget.idToken.refresh(idToken, function(newToken) {
+			widget.tokenManager.add("idToken", newToken);
 			$scope.token = success;
-		}, function(error) {
-			// Error
-		});
-	}
-
-	//	Clears the localStorage saved in the web browser and scope variables
-	function clearStorage() {
-		$window.localStorage.clear();
-		$scope = $scope.$new(true);
+	    })
 	}
 
 	//	Signout of organization
 	$scope.signout = function() {
-		widgetManager.logoutWidget()
-		.then(function(success) {
-			clearStorage();
-			$location.path("/login");
-		}, function(err) {
-			// Error
+		widget.session.exists(function(exists) {
+			// Session exists in Okta
+			// need to log out
+			if(exists){
+				widget.signOut();
+				widget.tokenManager.clear()
+				$location.path("/login");
+			}
 		});
 	};
 }
@@ -154,11 +142,15 @@ function HomeController($scope, $window, $location, widgetManager) {
 // Renders login view if session does not exist
 LoginController.$inject = ["$window", "$location", "$scope", "widgetManager"];
 function LoginController($window, $location, $scope, widgetManager) {
-	widgetManager.checkSession()
-	.then(function(loggedIn) {
-		widgetManager.logoutWidget();
-		$window.localStorage.clear();
-		$scope = $scope.$new(true);
+	var widget = widgetManager.getWidget()
+	widget.session.exists(function(exists) {
+		// Session exists in Okta
+		// need to log out
+		if(exists){
+			widget.signOut();
+			widget.tokenManager.clear();
+			$scope = $scope.$new(true);
+		}
 	});
 }
 

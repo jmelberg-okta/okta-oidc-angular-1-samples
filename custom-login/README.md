@@ -35,19 +35,21 @@ The `apiUrl` connects the sample application to `server.js` to verify the access
 ###Authentication
 Using the [Okta AuthSDK](http://developer.okta.com/docs/guides/okta_auth_sdk), a is authenticated by `username` and `password` on the login form by calling the following function.
 ```javascript
-authClient.signIn(user.email, user.password)
-.then(function(success) {
-	// Success
-	$window.localStorage["auth"] = success;
-
-	// Redirect on success
-	var client = authClient.getClient();
-	client.session.setCookieAndRedirect(JSON.parse(success).sessionToken,
-	client.options.redirectUri+"/#");
-
-}, function(error) {
-	console.error(error);
-});
+oktaAuth
+    .signIn({ username: user.email, password: user.password })
+	.then(function(transaction) {
+		if(transaction.status === "SUCCESS"){
+			$window.localStorage["auth"] = angular.toJson({
+				"sessionToken" : transaction.sessionToken,
+				"user" : transaction.user
+			});
+			oktaAuth.session.setCookieAndRedirect(transaction.sessionToken)
+			$window.location.href = '/';
+		}
+	}, function(error) {
+		// Error authenticating
+		console.error(error);
+	});
 ```
 
 Handling the transaction status is performed inside of `okta-angular.js`, which is injected inside of your Angular application.
@@ -60,20 +62,20 @@ Once a user is authenticated, the option to retrieve an `idToken` and `accessTok
 $scope.getTokens = function(auth) {
 	var tokenOptions = {
 		'sessionToken' : auth.sessionToken,
-		'responseType' : ['id_token', 'token'],
-		'scopes' : CONFIG.options.authParams.scope
+		'responseType' : ['id_token', 'token'] // Requires list for multiple inputs
 	};
-
-	authClient.getClient()
-	.idToken.authorize(tokenOptions)
+	oktaAuth.token.getWithoutPrompt(tokenOptions)
 	.then(function(success) {
 		// Success in order requested
 		tokenManager.add('idToken', success[0]);
 		tokenManager.add('accessToken', success[1]);
+		
+		// Update scope
+		$scope.$apply(function(){
+			$scope.idToken = tokenManager.get('idToken');
+			$scope.accessToken = tokenManager.get('accessToken');
 		});
-
 	}, function(error) {
-		// Error
 		console.error(error);
 	});
 };
@@ -83,13 +85,17 @@ Updates the current session object
 
 ```javascript
 $scope.refreshSession = function() {
-	authClient.getClient().session.refresh()
+	oktaAuth.session.refresh()
 	.then(function(success){
 		if(success.status === "ACTIVE") {
-			// Refreshed Session
+			$scope.$apply(function(){
+				$scope.sessionObject = success;
+			});
+		} else {
+			console.error(success.status);
 		}
 	}, function(error) {
-		// Error
+		console.error(error);
 	});
 };
 ```
@@ -99,7 +105,7 @@ Easily terminate the current session object
 
 ```javascript
 $scope.closeSession = function() {
-	authClient.getClient().session.close();
+	oktaAuth.session.close();
 };
 ```
 
@@ -108,17 +114,16 @@ If the current session is valid, returns a new ID Token and placed inside the To
 
 ```javascript
 $scope.renewIdToken = function() {
-	authClient.getClient()
-	.idToken.refresh(
-		{'scopes' : CONFIG.options.authParams.scope}
-	)
-	.then(function(result) {
-		// Success
-		tokenManager.refresh('idToken', result);
-	}, function(error){
-		// Error
-	});
-};
+	oktaAuth.token.refresh(tokenManager.get('idToken'))
+		.then(function(result) {
+			tokenManager.refresh('idToken', result);
+			$scope.$apply(function(){
+				$scope.idToken = tokenManager.get('idToken');
+			});
+		}, function(error){
+			console.error(error);
+		});
+	};
 ```
 
 ###Decode ID Token
@@ -126,8 +131,8 @@ Decodes raw ID Token and stores to a variable
 
 ```javascript
 $scope.decode = function(idToken) {
-	var decodedToken = authClient.getClient().idToken.decode(idToken);
-	};
+	var decodedToken = oktaAuth.token.decode(idToken);
+};
 ```
 
 ###Call External API

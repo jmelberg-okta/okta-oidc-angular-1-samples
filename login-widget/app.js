@@ -54,17 +54,28 @@ app.directive("myWidget",
 					scope.$apply(function() {
 						scope.widget = true;
 					});
-					widgetManager.renderWidget(element.children()[1])
-					.then(function(success) {
-						$window.localStorage["auth"] = angular.toJson({
-							"session" : success.session,
-							"user" : success.user
-						});
-						// Set session with Okta
-						success.session.setCookieAndRedirect($location.protocol() + "://" + location.host + "/#");
-					}, function(error) {
-						console.error(error);
-					});				
+
+					var widget = widgetManager.getWidget();
+
+					widget.renderEl(
+					    { el: element.children()[1] },
+
+						function(transaction) {
+							if(transaction.status === "SUCCESS") {
+								// Success
+								console.log(transaction);
+								$window.localStorage["auth"] = angular.toJson({
+									"session" : transaction.session,
+									"user" : transaction.user
+								});
+								scope.widget = false;
+
+								// Set session with Okta
+								transaction.session.setCookieAndRedirect(
+									$location.protocol() + "://" + location.host + "/#");
+							}
+						}
+					)
 				});
 			}
 		}
@@ -74,6 +85,9 @@ app.directive("myWidget",
 HomeController.$inject = ["$scope", "$window", "$location", "widgetManager"];
 function HomeController($scope, $window, $location, widgetManager) {
 	
+	// Get widget for helper methods
+	var widget = widgetManager.getWidget();
+
 	// Get auth object from LocalStorage
 	var auth = angular.isDefined($window.localStorage["auth"]) ? JSON.parse($window.localStorage["auth"]) : undefined;
 
@@ -87,22 +101,16 @@ function HomeController($scope, $window, $location, widgetManager) {
 
 	// Refreshes the current session if active	
 	$scope.refreshSession = function() {
-		widgetManager.refreshSession()
-		.then(function(success) {
+		widget.session.refresh(function(success) {
 			// Show session object
 			$scope.sessionObject = success;
-		}, function(err) {
-			// Error
 		});
 	};
 
 	// Closes the current live session
 	$scope.closeSession = function() {
-		widgetManager.closeSession()
-		.then(function(success) {
+		widget.session.close(function(){
 			$scope.session = undefined;
-		}, function(err) {
-			// Error
 		});
 	};
 
@@ -114,12 +122,12 @@ function HomeController($scope, $window, $location, widgetManager) {
 
 	//	Signout of organization
 	$scope.signout = function() {
-		widgetManager.logoutWidget()
-		.then(function(success) {
-			clearStorage();
-			$location.path("/login");
-		}, function(err) {
-			// Error
+		widget.session.exists(function(exists) {
+			if(exists) {
+				widget.signOut();
+				clearStorage();
+				$location.path("/login");
+			}
 		});
 	};
 }
@@ -127,11 +135,14 @@ function HomeController($scope, $window, $location, widgetManager) {
 // Renders login view if session does not exist
 LoginController.$inject = ["$window", "$location", "$scope", "widgetManager"];
 function LoginController($window, $location, $scope, widgetManager) {
-	widgetManager.checkSession()
-	.then(function(loggedIn) {
-		widgetManager.logoutWidget();
-		$window.localStorage.clear();
-		$scope = $scope.$new(true);
+	var widget = widgetManager.getWidget();
+
+	widget.session.exists(function(exists) {
+		if(exists) {
+			widget.signOut();
+			$window.localStorage.clear();
+			$scope = $scope.$new(true);
+		}
 	});
 }
 
